@@ -23,6 +23,7 @@
 
 static struct kmem_cache *user_ns_cachep __read_mostly;
 static DEFINE_MUTEX(userns_state_mutex);
+int sysctl_userns_restrict __read_mostly;
 
 static bool new_idmap_permitted(const struct file *file,
 				struct user_namespace *ns, int cap_setid,
@@ -74,6 +75,12 @@ int create_user_ns(struct cred *new)
 	struct ucounts *ucounts;
 	int ret, i;
 
+	ret = -EPERM;
+	if (sysctl_userns_restrict && !(capable(CAP_SYS_ADMIN) &&
+					capable(CAP_SETUID) &&
+					capable(CAP_SETGID)))
+		goto fail;
+
 	ret = -ENOSPC;
 	if (parent_ns->level > 32)
 		goto fail;
@@ -102,6 +109,7 @@ int create_user_ns(struct cred *new)
 		goto fail_dec;
 
 	ret = -ENOMEM;
+
 	ns = kmem_cache_zalloc(user_ns_cachep, GFP_KERNEL);
 	if (!ns)
 		goto fail_dec;

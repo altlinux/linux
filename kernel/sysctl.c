@@ -128,6 +128,10 @@ static int ten_thousand = 10000;
 #ifdef CONFIG_PERF_EVENTS
 static int six_hundred_forty_kb = 640 * 1024;
 #endif
+#ifdef CONFIG_USER_NS
+extern int sysctl_userns_restrict;
+#endif
+
 
 /* this is needed for the proc_doulongvec_minmax of vm_dirty_bytes */
 static unsigned long dirty_bytes_min = 2 * PAGE_SIZE;
@@ -2306,6 +2310,17 @@ static struct ctl_table kern_table[] = {
 		.extra1		= SYSCTL_ZERO,
 		.extra2		= &two,
 	},
+#endif
+#ifdef CONFIG_USER_NS
+       {
+               .procname       = "userns_restrict",
+               .data           = &sysctl_userns_restrict,
+               .maxlen         = sizeof(int),
+               .mode           = 0644,
+               .proc_handler   = proc_dointvec_minmax,
+               .extra1         = &zero,
+               .extra2         = &one,
+       },
 #endif
 	{
 		.procname	= "ngroups_max",
