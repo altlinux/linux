@@ -23,7 +23,7 @@
 
 static struct kmem_cache *user_ns_cachep __read_mostly;
 static DEFINE_MUTEX(userns_state_mutex);
-int sysctl_userns_restrict __read_mostly;
+int sysctl_userns_restrict __read_mostly = 1;
 
 static bool new_idmap_permitted(const struct file *file,
 				struct user_namespace *ns, int cap_setid,
