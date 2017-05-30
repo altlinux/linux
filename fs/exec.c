@@ -1229,6 +1229,32 @@ void __set_task_comm(struct task_struct *tsk, const char *buf, bool exec)
 	perf_event_comm(tsk, exec);
 }
 
+static int bprm_secureexec_argv_env_limit(struct linux_binprm *bprm) {
+	unsigned long size;
+
+	if (!bprm->secureexec)
+	    return 0;
+
+	size = bprm->vma->vm_end - bprm->vma->vm_start;
+
+	/*
+	 * Account for the size of all the argv and envp pointers to
+	 * the argv and envp strings.
+	 */
+	size += (bprm->argc + bprm->envc) * sizeof(void *);
+
+	/*
+	 * In case of AT_SECURE binaries, limit the stack size for
+	 * the argv+env strings to 512KB, preventing from clashing
+	 * the stack with other memory allocations through megabytes
+	 * of command-line arguments and environment variables.
+	 */
+	if (size > (512UL << 10))
+		return -E2BIG;
+
+	return 0;
+}
+
 /*
  * Calling this is the point of no return. None of the failures will be
  * seen by userspace since either the process is already taking a fatal
@@ -1242,6 +1268,10 @@ int begin_new_exec(struct linux_binprm * bprm)
 
 	/* Once we are committed compute the creds */
 	retval = bprm_creds_from_file(bprm);
+	if (retval)
+		return retval;
+
+	retval = bprm_secureexec_argv_env_limit(bprm);
 	if (retval)
 		return retval;
 
