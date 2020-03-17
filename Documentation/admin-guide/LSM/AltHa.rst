@@ -29,7 +29,9 @@ Restrscript LSM submodule provides a way to restrict some programms to be execut
 Sysctl parameters and defaults:
 
 * ``kernel.altha.rstrscript.enabled = 0``, set to 1 to enable
-* ``kernel.altha.rstrscript.interpreters =``, colon-separated list of restricted interpreters for example: ``/usr/bin/python:/usr/bin/python3:/usr/bin/perl:/usr/bin/tclsh``. Symlinks are supported in both ways: you can set symlink to interpreter as exception and interpreter and all symlinks on it will be restricted.
+* ``kernel.altha.rstrscript.interpreters =``, colon-separated list of restricted interpreters for example: ``/lib64/ld-linux-x86-64.so.2:/usr/bin/python:/usr/bin/python3:/usr/bin/perl:/usr/bin/tclsh``. Symlinks are supported in both ways: you can set symlink to interpreter as exception and interpreter and all symlinks on it will be restricted.
+
+Adding ld-linux into blocking list prevents running interpreters via ``ld-linux interpreter``.
 
 Note: in this configuration all scripts starting with ``#!/usr/bin/env python`` will be blocked.
 
