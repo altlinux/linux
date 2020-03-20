@@ -277,6 +277,18 @@ config PCIE_BRCMSTB
 	  Say Y here to enable PCIe host controller support for
 	  Broadcom STB based SoCs, like the Raspberry Pi 4.
 
+config PCI_BAIKAL
+       tristate "Baikal SoC PCIe controller"
+       default m if ARCH_BAIKAL
+       depends on ARCH_BAIKAL
+       depends on OF && HAS_IOMEM
+       depends on PCI_MSI_IRQ_DOMAIN
+       select PCIE_DW
+       help
+        Enables support for the PCIe controller in the Baikal SoC.  There
+        are three instances of PCIe controller in Baikal-M.  Two of the controllers
+        support PCIe 3.0 x4 and the remaining one supports PCIe 3.0 x8.
+
 config PCI_HYPERV_INTERFACE
 	tristate "Hyper-V PCI Interface"
 	depends on X86 && HYPERV && PCI_MSI && PCI_MSI_IRQ_DOMAIN && X86_64
