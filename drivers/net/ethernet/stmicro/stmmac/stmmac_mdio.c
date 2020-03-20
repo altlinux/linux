@@ -287,6 +287,63 @@ static int stmmac_mdio_write(struct mii_bus *bus, int phyaddr, int phyreg,
 				  100, 10000);
 }
 
+#define MAC_GPIO 0xe0 /* GPIO register */
+#define MAC_GPIO_GPO0 (1 << 8) /* 0-output port */
+
+/**
+ * Reset the MII bus via MAC GP out pin
+ */
+static int stmmac_mdio_reset_gp_out(struct stmmac_priv *priv) {
+#if IS_ENABLED(CONFIG_STMMAC_PLATFORM) && IS_ENABLED(CONFIG_OF)
+	u32 value, high, low;
+	u32 delays[3] = { 0, 0, 0 };
+	bool active_low = false;
+	struct device_node *np = priv->device->of_node;
+
+	if (!np)
+		return -ENODEV;
+
+	if (!of_property_read_bool(np, "snps,reset-gp-out")) {
+		dev_warn(priv->device, "snps,reset-gp-out is not set\n");
+		return -ENODEV;
+	}
+
+	active_low = of_property_read_bool(np, "snsps,reset-active-low");
+	of_property_read_u32_array(np, "snps,reset-delays-us", delays, 3);
+
+	value = readl(priv->ioaddr + MAC_GPIO);
+	if (active_low) {
+		high = value | MAC_GPIO_GPO0;
+		low = value & ~MAC_GPIO_GPO0;
+	} else {
+		high = value & ~MAC_GPIO_GPO0;
+		low = value | MAC_GPIO_GPO0;
+	}
+
+	writel(high, priv->ioaddr + MAC_GPIO);
+	if (delays[0])
+		msleep(DIV_ROUND_UP(delays[0], 1000));
+
+	writel(low, priv->ioaddr + MAC_GPIO);
+	if (delays[1])
+		msleep(DIV_ROUND_UP(delays[1], 1000));
+
+	writel(high, priv->ioaddr + MAC_GPIO);
+	if (delays[2])
+		msleep(DIV_ROUND_UP(delays[2], 1000));
+
+	/* Clear PHY reset */
+	udelay(10);
+	value = readl(priv->ioaddr + MAC_GPIO);
+	value |= MAC_GPIO_GPO0;
+	writel(value, priv->ioaddr + MAC_GPIO);
+	mdelay(1000);
+	dev_info(priv->device, "mdio reset completed\n");
+	return 0;
+#endif
+	return -ENODEV;
+}
+
 /**
  * stmmac_mdio_reset
  * @bus: points to the mii_bus structure
@@ -302,13 +359,20 @@ int stmmac_mdio_reset(struct mii_bus *bus)
 #ifdef CONFIG_OF
 	if (priv->device->of_node) {
 		struct gpio_desc *reset_gpio;
+		bool need_reset_gp_out;
 		u32 delays[3] = { 0, 0, 0 };
 
 		reset_gpio = devm_gpiod_get_optional(priv->device,
 						     "snps,reset",
 						     GPIOD_OUT_LOW);
-		if (IS_ERR(reset_gpio))
-			return PTR_ERR(reset_gpio);
+		if (IS_ERR(reset_gpio)) {
+			need_reset_gp_out = of_property_read_bool(priv->device->of_node,
+								  "snps,reset-gp-out");
+			if (need_reset_gp_out)
+				return stmmac_mdio_reset_gp_out(priv);
+			else
+				return PTR_ERR(reset_gpio);
+		}
 
 		device_property_read_u32_array(priv->device,
 					       "snps,reset-delays-us",
