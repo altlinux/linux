@@ -158,4 +158,13 @@ config USB_DWC3_XILINX
 	  This driver handles both ZynqMP and Versal SoC operations.
 	  Say 'Y' or 'M' if you have one such device.
 
+config USB_DWC3_BAIKAL
+	tristate "Baikal Electronics Platforms"
+	depends on OF
+	default USB_DWC3
+	help
+	  Baikal Electronics SoCs with one DesignWare Core USB3 IP
+	  inside.
+	  Say 'Y' or 'M' if you have one such device.
+
 endif
