@@ -466,6 +466,24 @@ config HISI_HIKEY_USB
 	  switching between the dual-role USB-C port and the USB-A host ports
 	  using only one USB controller.
 
+config TP_BMC
+	tristate "T-platforms Baikal-T(1)/M BMC"
+	depends on I2C && SYSFS
+	depends on OF
+	select PINCTRL
+	select GENERIC_PINCONF
+	select SERIO
+	default y if ARCH_BAIKAL
+	help
+	  Say Y here if you want to build a driver for T-platforms BMC devices
+	  embedded into the boards with Baikal-T(1)/M processors. The device main
+	  purpose is the CPU kick-starting as well as some additional side-way
+	  functionality like power on/off buttons state tracing and full device
+	  powering off.
+
+	  If you choose to build module, its name will be tp-bmc. If unsure,
+	  say N here.
+
 source "drivers/misc/c2port/Kconfig"
 source "drivers/misc/eeprom/Kconfig"
 source "drivers/misc/cb710/Kconfig"
