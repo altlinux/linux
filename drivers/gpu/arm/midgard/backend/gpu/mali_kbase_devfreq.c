@@ -238,9 +238,12 @@ static int kbase_devfreq_init_freq_table(struct kbase_device *kbdev,
 
 static void kbase_devfreq_term_freq_table(struct kbase_device *kbdev)
 {
-	struct devfreq_dev_profile *dp = kbdev->devfreq->profile;
-
-	kfree(dp->freq_table);
+	struct devfreq_dev_profile *dp;
+	if (!IS_ERR_OR_NULL(kbdev->devfreq)) {
+		dp = kbdev->devfreq->profile;
+		if (!IS_ERR_OR_NULL(dp))
+			kfree(dp->freq_table);
+	}
 }
 
 static void kbase_devfreq_exit(struct device *dev)
