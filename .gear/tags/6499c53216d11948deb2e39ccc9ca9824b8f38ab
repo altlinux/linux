@@ -1,0 +1,18 @@
+object 3d77e6a8804abcc0504c904bd6e5cdf3a5cf8162
+type commit
+tag v5.7
+tagger Linus Torvalds <torvalds@linux-foundation.org> 1590968964 -0700
+
+Linux 5.7
+-----BEGIN PGP SIGNATURE-----
+
+iQFSBAABCAA8FiEEq68RxlopcLEwq+PEeb4+QwBBGIYFAl7UQoQeHHRvcnZhbGRz
+QGxpbnV4LWZvdW5kYXRpb24ub3JnAAoJEHm+PkMAQRiGeuYH/11gofJSIxeMIxu6
+ZRxXDYi2EPZcSNbdOC1BrKyRalVJLpWvalJR4iTKmMP97H2tQ4p7okLRlYwBQ3Ds
+aEc8Osb9Ew/DR/b6TbX2kgVuLTPKSzh/4tXnF84NY5P+WdQZLTm4TcpKnx9Q2BFg
+hATib02KTTxlmU7hCseN2Rlgj391lKbOQh0p/osYiHgTh5TxWntVM7lbAt7K/M+l
+7HQlW9qWWs0U9Lpl9rOirLskQZ1s0swXAP6QpLIyXIIFwCBDi8zeofDKRbik0VET
+CNg6fL4tecBSrnE0H5FSErYu2e9wzWBbiWSiRMfi5WwC0O0mTOjCmENscHGJJdRm
+j6vYoio=
+=kr9v
+-----END PGP SIGNATURE-----
