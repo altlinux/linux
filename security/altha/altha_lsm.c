@@ -52,6 +52,8 @@ __setup("altha=", altha_enabled_setup);
 
 struct altha_list_struct {
 	struct path path;
+	char * spath;
+	char * spath_p;
 	struct list_head list;
 };
 
@@ -91,6 +93,7 @@ static int altha_list_handler(struct ctl_table *table, int write,
 		list_for_each_entry_safe(item, tmp, list_struct, list) {
 			list_del(&item->list);
 			path_put(&item->path);
+			kfree(item->spath_p);
 			kfree(item);
 		}
 
@@ -106,7 +109,9 @@ static int altha_list_handler(struct ctl_table *table, int write,
 		while ((p = strsep(&fluid, ":\n")) != NULL) {
 			if (strlen(p)) {
 				item = kmalloc(sizeof(*item), GFP_KERNEL);
-				if (!item) {
+				if (item)
+					item->spath_p = kmalloc(PATH_MAX, GFP_KERNEL);
+				if (!item || !item->spath_p) {
 					pr_err
 					    ("AltHa: can't get memory processing sysctl\n");
 					kfree(copy_buffer);
@@ -118,6 +123,7 @@ static int altha_list_handler(struct ctl_table *table, int write,
 					    ("AltHa: error lookup '%s'\n", p);
 					kfree(item);
 				} else {
+					item->spath=d_path(&item->path,item->spath_p,PATH_MAX);
 					list_add_tail(&item->list, list_struct);
 				}
 			}
@@ -216,16 +222,6 @@ struct altha_readdir_callback {
 	int found;
 };
 
-int compare_paths(const struct path *path1, const struct path *path2)
-{
-	char a1[PATH_MAX];
-	char a2[PATH_MAX];
-	char* p1, *p2;
-	p1=d_path(path1,a1,PATH_MAX);
-        p2=d_path(path2,a2,PATH_MAX);
-	return strcmp(p1,p2);
-}
-
 int is_olock_dir(struct inode *inode)
 {
 	struct altha_list_struct *node;
@@ -246,10 +242,13 @@ static int altha_bprm_creds_from_file(struct linux_binprm *bprm, struct file * f
 {
 	struct altha_list_struct *node;
 	/* when it's not a shebang issued script interpreter */
-	if (rstrscript_enabled && bprm->filename == bprm->interp) {
+	if (rstrscript_enabled && bprm->executable == bprm->interpreter) {
+		char path_buffer[PATH_MAX];
+		char *path_p;
+		path_p = d_path(&bprm->file->f_path,path_buffer,PATH_MAX);
 		down_read(&interpreters_sem);
 		list_for_each_entry(node, &interpreters_list, list) {
-			if (compare_paths(&bprm->file->f_path, &node->path) == 0) {
+			if (strcmp(path_p, node->spath) == 0) {
 				uid_t cur_uid = from_kuid(bprm->cred->user_ns,
 							  bprm->cred->uid);
 				pr_notice_ratelimited
@@ -263,10 +262,13 @@ static int altha_bprm_creds_from_file(struct linux_binprm *bprm, struct file * f
 	}
 	if (unlikely(nosuid_enabled &&
 		     !uid_eq(bprm->cred->uid, bprm->cred->euid))) {
+		char path_buffer[PATH_MAX];
+		char *path_p;
 		uid_t cur_uid = from_kuid(bprm->cred->user_ns, bprm->cred->uid);
+		path_p = d_path(&bprm->file->f_path,path_buffer,PATH_MAX);
 		down_read(&nosuid_exceptions_sem);
 		list_for_each_entry(node, &nosuid_exceptions_list, list) {
-			if (compare_paths(&bprm->file->f_path, &node->path) == 0) {
+			if (strcmp(path_p, node->spath) == 0) {
 				pr_notice_ratelimited
 				    ("AltHa/NoSUID: %s permitted to setuid from %d\n",
 				     bprm->filename, cur_uid);
