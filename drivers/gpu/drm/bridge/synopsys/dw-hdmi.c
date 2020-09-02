@@ -3396,6 +3396,12 @@ struct dw_hdmi *dw_hdmi_probe(struct platform_device *pdev,
 		audio.irq = irq;
 		audio.hdmi = hdmi;
 		audio.eld = hdmi->connector.eld;
+		audio.reg_offset = 0;
+		if (of_device_is_compatible(np, "baikal,hdmi")) {
+			audio.reg_offset = 2;
+			dev_info(dev, "setting audio.reg_offset=%d for BE-M1000 SoC\n",
+				 audio.reg_offset);
+		}
 		hdmi->enable_audio = dw_hdmi_ahb_audio_enable;
 		hdmi->disable_audio = dw_hdmi_ahb_audio_disable;
 
