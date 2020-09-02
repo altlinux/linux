@@ -10,6 +10,7 @@ struct dw_hdmi_audio_data {
 	int irq;
 	struct dw_hdmi *hdmi;
 	u8 *eld;
+	unsigned reg_offset;
 };
 
 struct dw_hdmi_i2s_audio_data {
