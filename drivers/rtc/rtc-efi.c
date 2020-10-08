@@ -17,6 +17,7 @@
 #include <linux/platform_device.h>
 #include <linux/rtc.h>
 #include <linux/efi.h>
+#include <linux/of.h>
 
 #define EFI_ISDST (EFI_TIME_ADJUST_DAYLIGHT|EFI_TIME_IN_DAYLIGHT)
 
@@ -257,6 +258,14 @@ static int __init efi_rtc_probe(struct platform_device *dev)
 	efi_time_t eft;
 	efi_time_cap_t cap;
 
+#ifdef CONFIG_OF
+	/* efi.get_time is not always safe to call since some UEFI
+	 * implementations do not privde get_time at runtime. */
+	if (of_device_is_compatible(of_root, "baikal,baikal-m")) {
+		dev_err(&dev->dev, "Baikal-M UEFI has no get_time\n");
+		return -ENODEV;
+	}
+#endif
 	/* First check if the RTC is usable */
 	if (efi.get_time(&eft, &cap) != EFI_SUCCESS)
 		return -ENODEV;
