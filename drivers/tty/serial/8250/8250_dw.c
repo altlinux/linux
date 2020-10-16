@@ -329,14 +329,17 @@ dw8250_do_pm(struct uart_port *port, unsigned int state, unsigned int old)
 static void dw8250_set_termios(struct uart_port *p, struct ktermios *termios,
 			       struct ktermios *old)
 {
-	unsigned long newrate = tty_termios_baud_rate(termios) * 16;
+	unsigned long baud = tty_termios_baud_rate(termios);
+	unsigned long newrate = baud * 16;
 	struct dw8250_data *d = to_dw8250_data(p->private_data);
 	long rate;
 	int ret;
 
 	clk_disable_unprepare(d->clk);
 	rate = clk_round_rate(d->clk, newrate);
-	if (rate > 0) {
+	if (rate > baud * 17 || rate < baud * 15) {
+		ret = -EINVAL; /* cannot set rate with acceptable accuracy */
+	} else if (rate > 0) {
 		/*
 		 * Premilinary set the uartclk to the new clock rate so the
 		 * clock update event handler caused by the clk_set_rate()
