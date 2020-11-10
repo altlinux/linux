@@ -11,6 +11,7 @@
 #include <asm/efi.h>
 #include <asm/memory.h>
 #include <asm/sections.h>
+#include <linux/libfdt.h>
 #include <asm/sysreg.h>
 
 #include "efistub.h"
@@ -34,6 +35,31 @@ efi_status_t check_platform_features(void)
 	return EFI_SUCCESS;
 }
 
+static const char* machines_need_low_alloc[] = {
+	"baikal,baikal-m",
+};
+
+static bool need_low_alloc(void) {
+	size_t i;
+	const void *fdt;
+	const char *match;
+
+	fdt = get_efi_config_table(DEVICE_TREE_GUID);
+	if (!fdt) {
+		efi_info("failed to retrive FDT from EFI\n");
+		return false;
+	}
+
+	for (i = 0; i < ARRAY_SIZE(machines_need_low_alloc); i++) {
+		match = machines_need_low_alloc[i];
+		if (fdt_node_check_compatible(fdt, 0, match) == 0) {
+			efi_info("machine %s: forcing kernel relocation to low address\n", match);
+			return true;
+		}
+	}
+	return false;
+}
+
 /*
  * Although relocatable kernels can fix up the misalignment with respect to
  * MIN_KIMG_ALIGN, the resulting virtual text addresses are subtly out of
@@ -46,6 +72,19 @@ static u64 min_kimg_align(void)
 	return efi_nokaslr ? MIN_KIMG_ALIGN : EFI_KIMG_ALIGN;
 }
 
+static inline efi_status_t efi_low_alloc(unsigned long size, unsigned long align,
+					 unsigned long *addr)
+{
+	/*
+	 * Don't allocate at 0x0. It will confuse code that
+	 * checks pointers against NULL. Skip the first 8
+	 * bytes so we start at a nice even number.
+	 */
+	return efi_low_alloc_above(size, align, addr, 0x8);
+}
+
+
+
 efi_status_t handle_kernel_image(unsigned long *image_addr,
 				 unsigned long *image_size,
 				 unsigned long *reserve_addr,
@@ -55,6 +94,13 @@ efi_status_t handle_kernel_image(unsigned long *image_addr,
 	efi_status_t status;
 	unsigned long kernel_size, kernel_memsize = 0;
 	u32 phys_seed = 0;
+	bool force_low_reloc = need_low_alloc();
+	if (force_low_reloc) {
+		if (!efi_nokaslr) {
+			efi_info("booting on a broken firmware, KASLR will be disabled\n");
+			efi_nokaslr = true;
+		}
+	}
 
 	if (IS_ENABLED(CONFIG_RANDOMIZE_BASE)) {
 		if (!efi_nokaslr) {
@@ -69,7 +115,8 @@ efi_status_t handle_kernel_image(unsigned long *image_addr,
 				efi_nokaslr = true;
 			}
 		} else {
-			efi_info("KASLR disabled on kernel command line\n");
+			if (!force_low_reloc)
+				efi_info("KASLR disabled on kernel command line\n");
 		}
 	}
 
@@ -89,6 +136,15 @@ efi_status_t handle_kernel_image(unsigned long *image_addr,
 					  reserve_addr, phys_seed);
 	} else {
 		status = EFI_OUT_OF_RESOURCES;
+	}
+
+	if (force_low_reloc) {
+		status = efi_low_alloc(*reserve_size,
+				       min_kimg_align(),
+				       reserve_addr);
+		if (status != EFI_SUCCESS) {
+			efi_err("Failed to relocate kernel, expect secondary CPUs boot failure\n");
+		}
 	}
 
 	if (status != EFI_SUCCESS) {
@@ -113,6 +169,9 @@ efi_status_t handle_kernel_image(unsigned long *image_addr,
 	}
 
 	*image_addr = *reserve_addr;
+	if (efi_nokaslr) {
+		efi_info("relocating kernel to 0x%lx\n", *image_addr);
+	}
 	memcpy((void *)*image_addr, _text, kernel_size);
 
 	return EFI_SUCCESS;
