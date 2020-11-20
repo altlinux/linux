@@ -790,6 +790,7 @@ int kbase_mem_copy_from_extres(struct kbase_context *kctx,
 	break;
 #ifdef CONFIG_DMA_SHARED_BUFFER
 	case KBASE_MEM_TYPE_IMPORTED_UMM: {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 7, 0)
 		struct dma_buf *dma_buf = gpu_alloc->imported.umm.dma_buf;
 
 		KBASE_DEBUG_ASSERT(dma_buf != NULL);
@@ -826,6 +827,10 @@ int kbase_mem_copy_from_extres(struct kbase_context *kctx,
 				0, dma_to_copy,
 #endif
 				DMA_FROM_DEVICE);
+#else
+		pr_err("kbase_mem_copy_from_extres: DMA_SHARED_BUFFER not implemented\n");
+		ret = -EINVAL;
+#endif
 		break;
 	}
 #endif
