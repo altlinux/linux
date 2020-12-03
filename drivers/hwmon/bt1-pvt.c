@@ -29,6 +29,9 @@
 #include <linux/seqlock.h>
 #include <linux/sysfs.h>
 #include <linux/types.h>
+#ifdef CONFIG_ARM64
+#include <linux/arm-smccc.h>
+#endif
 
 #include "bt1-pvt.h"
 
@@ -138,6 +141,7 @@ static long pvt_calc_poly(const struct pvt_poly *poly, long data)
 	return ret / poly->total_divider;
 }
 
+#ifdef BT1_PVT_DIRECT_REG_ACCESS
 static inline u32 pvt_readl(struct pvt_hwmon const *pvt, int reg) {
 	return readl(pvt->regs + reg);
 }
@@ -149,6 +153,25 @@ static inline u32 pvt_readl_relaxed(struct pvt_hwmon const *pvt, int reg) {
 static inline void pvt_writel(u32 data, struct pvt_hwmon const *pvt, int reg) {
 	writel(data, pvt->regs + reg);
 }
+#else
+static inline u32 pvt_readl(struct pvt_hwmon const *pvt, int reg) {
+	struct arm_smccc_res res;
+	arm_smccc_smc(BAIKAL_SMC_PVT_ID, PVT_READ, pvt->pvt_id, reg,
+		      0, 0, 0, 0, &res);
+	return res.a0;
+}
+
+static inline u32 pvt_readl_relaxed(struct pvt_hwmon const *pvt, int reg) {
+	return pvt_readl(pvt, reg);
+}
+
+static inline void pvt_writel(u32 data, struct pvt_hwmon const *pvt, int reg) {
+	struct arm_smccc_res res;
+	arm_smccc_smc(BAIKAL_SMC_PVT_ID, PVT_WRITE, pvt->pvt_id, reg,
+		      data, 0, 0, 0, &res);
+}
+#endif
+
 static inline u32 pvt_update(struct pvt_hwmon *pvt, int reg, u32 mask, u32 data)
 {
 	u32 old;
