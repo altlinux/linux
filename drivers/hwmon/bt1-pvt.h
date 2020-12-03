@@ -101,6 +101,13 @@
 # define PVT_TOUT_DEF		0
 #endif
 
+#define BAIKAL_SMC_PVT_ID 0x82000001
+#define PVT_READ 0
+#define PVT_WRITE 1
+#ifndef CONFIG_ARM64
+#define BT1_PVT_DIRECT_REG_ACCESS
+#endif
+
 /*
  * enum pvt_sensor_type - Baikal-T1 PVT sensor types (correspond to each PVT
  *			  sampling mode)
@@ -217,6 +224,7 @@ struct pvt_hwmon {
 	enum pvt_sensor_type sensor;
 	struct pvt_cache cache[PVT_SENSORS_NUM];
 	ktime_t timeout;
+	int pvt_id;
 };
 
 /*
