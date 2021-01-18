@@ -206,9 +206,15 @@ static int assign_irqs(struct platform_device *pdev)
 #ifdef CONFIG_OF
 		if (!strncmp(irq_res->name, "JOB", 4)) {
 			irqtag = JOB_IRQ_TAG;
+		} else if (!strncmp(irq_res->name, "job", 4)) {
+			irqtag = JOB_IRQ_TAG;
 		} else if (!strncmp(irq_res->name, "MMU", 4)) {
 			irqtag = MMU_IRQ_TAG;
+		} else if (!strncmp(irq_res->name, "mmu", 4)) {
+			irqtag = MMU_IRQ_TAG;
 		} else if (!strncmp(irq_res->name, "GPU", 4)) {
+			irqtag = GPU_IRQ_TAG;
+		} else if (!strncmp(irq_res->name, "gpu", 4)) {
 			irqtag = GPU_IRQ_TAG;
 		} else {
 			dev_err(&pdev->dev, "Invalid irq res name: '%s'\n",
@@ -4092,6 +4098,7 @@ static const struct dev_pm_ops kbase_pm_ops = {
 #ifdef CONFIG_OF
 static const struct of_device_id kbase_dt_ids[] = {
 	{ .compatible = "arm,malit6xx" },
+	{ .compatible = "arm,mali-t628" },
 	{ .compatible = "arm,mali-midgard" },
 	{ /* sentinel */ }
 };
