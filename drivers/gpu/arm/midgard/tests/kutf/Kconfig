@@ -22,7 +22,8 @@
 
 config MALI_KUTF
  tristate "Mali Kernel Unit Test Framework"
- default m
+ default n
+ depends on BROKEN
  help
    Enables MALI testing framework. To compile it as a module,
    choose M here - this will generate a single module called kutf.
