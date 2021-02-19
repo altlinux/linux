@@ -105,6 +105,8 @@ static const struct of_device_id blacklist[] __initconst = {
 
 	{ .compatible = "arm,vexpress", },
 
+	{ .compatible = "baikal,baikal-m", },
+
 	{ .compatible = "calxeda,highbank", },
 	{ .compatible = "calxeda,ecx-2000", },
 
