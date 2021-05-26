@@ -71,7 +71,7 @@ static int vdu_modeset_init(struct drm_device *dev)
 	struct drm_mode_config *mode_config;
 	struct baikal_vdu_private *priv = dev->dev_private;
 	struct arm_smccc_res res;
-	int ret = 0;
+	int ret = 0, ep_count = 0;
 
 	if (priv == NULL)
 		return -EINVAL;
@@ -103,6 +103,12 @@ static int vdu_modeset_init(struct drm_device *dev)
 		dev_info(dev->dev, "Bridge probe deferred\n");
 		goto out_config;
 	}
+	ep_count = of_graph_get_endpoint_count(dev->dev->of_node);
+	if (ep_count <= 0) {
+		dev_err(dev->dev, "no endpoints connected to panel/bridge\n");
+		goto out_config;
+	}
+	priv->ep_count = ep_count;
 
 	if (priv->bridge) {
 		struct drm_encoder *encoder = &priv->encoder;
@@ -121,6 +127,7 @@ static int vdu_modeset_init(struct drm_device *dev)
 			goto out_config;
 		}
 	} else if (priv->panel) {
+		dev_dbg(dev->dev, "panel has %d endpoints\n", priv->ep_count);
 		ret = baikal_vdu_lvds_connector_create(dev);
 		if (ret) {
 			dev_err(dev->dev, "Failed to create DRM connector\n");
