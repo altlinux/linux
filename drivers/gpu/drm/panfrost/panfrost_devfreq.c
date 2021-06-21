@@ -100,6 +100,10 @@ int panfrost_devfreq_init(struct panfrost_device *pfdev)
 		DRM_DEV_INFO(dev, "More than 1 supply is not supported yet\n");
 		return 0;
 	}
+	if (of_device_is_compatible(of_root, "baikal,baikal-m")) {
+		dev_info(pfdev->dev, "disabling GPU devfreq on BE-M1000\n");
+		return 0;
+	}
 
 	ret = devm_pm_opp_set_regulators(dev, pfdev->comp->supply_names,
 					 pfdev->comp->num_supplies);
