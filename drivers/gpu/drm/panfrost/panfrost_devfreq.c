@@ -97,6 +97,12 @@ int panfrost_devfreq_init(struct panfrost_device *pfdev)
 	struct thermal_cooling_device *cooling;
 	struct panfrost_devfreq *pfdevfreq = &pfdev->pfdevfreq;
 
+	if (of_device_is_compatible(of_root, "baikal,baikal-m")) {
+		dev_info(pfdev->dev, "disabling GPU devfreq on BE-M1000\n");
+		ret = 0;
+		goto err_fini;
+	}
+
 	opp_table = dev_pm_opp_set_regulators(dev, pfdev->comp->supply_names,
 					      pfdev->comp->num_supplies);
 	if (IS_ERR(opp_table)) {
