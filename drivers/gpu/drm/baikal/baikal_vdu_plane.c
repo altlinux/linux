@@ -47,6 +47,11 @@ static int baikal_vdu_primary_plane_atomic_check(struct drm_plane *plane,
 		return 0;
 
 	crtc_state = drm_atomic_get_crtc_state(state->state, state->crtc);
+	if (IS_ERR(crtc_state)) {
+		ret = PTR_ERR(crtc_state);
+		dev_warn(dev->dev, "failed to get crtc_state: %d\n", ret);
+		return ret;
+	}
 	mode = &crtc_state->adjusted_mode;
 	rate = mode->clock * 1000;
 	if (rate == clk_get_rate(priv->clk))
