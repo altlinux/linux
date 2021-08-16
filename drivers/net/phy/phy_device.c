@@ -840,18 +840,37 @@ static int get_phy_c22_id(struct mii_bus *bus, int addr, u32 *phy_id)
 int fwnode_get_phy_id(struct fwnode_handle *fwnode, u32 *phy_id)
 {
 	unsigned int upper, lower;
-	const char *cp;
-	int ret;
+	const char **compat;
+	int ret, count, i;
 
-	ret = fwnode_property_read_string(fwnode, "compatible", &cp);
-	if (ret)
-		return ret;
+	/* FIXME: where is fwnode_property_for_each_string? */
+	count = fwnode_property_read_string_array(fwnode, "compatible", NULL, 0);
+	if (count < 0)
+		return count;
+	else if (count == 0)
+		return -ENODATA;
 
-	if (sscanf(cp, "ethernet-phy-id%4x.%4x", &upper, &lower) != 2)
-		return -EINVAL;
+	compat = kcalloc(count, sizeof(*compat), GFP_KERNEL);
+	if (!compat)
+		return -ENOMEM;
+	ret = fwnode_property_read_string_array(fwnode, "compatible", compat, count);
+	if (ret < 0)
+		goto out;
 
-	*phy_id = ((upper & GENMASK(15, 0)) << 16) | (lower & GENMASK(15, 0));
-	return 0;
+	ret = -EINVAL;
+	for (i = 0; i < count; i++) {
+		pr_info("%s: considering '%s'\n", __func__, compat[i]);
+		if (sscanf(compat[i], "ethernet-phy-id%4x.%4x", &upper, &lower) != 2)
+			continue;
+		else {
+			*phy_id = ((upper & GENMASK(15, 0)) << 16) | (lower & GENMASK(15, 0));
+			ret = 0;
+			break;
+		}
+	}
+out:
+	kfree(compat);
+	return ret;
 }
 EXPORT_SYMBOL(fwnode_get_phy_id);
 
