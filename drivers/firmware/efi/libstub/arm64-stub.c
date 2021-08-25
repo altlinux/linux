@@ -127,13 +127,6 @@ efi_status_t handle_kernel_image(unsigned long *image_addr,
 	efi_status_t status;
 	unsigned long kernel_size, kernel_memsize = 0;
 	u32 phys_seed = 0;
-	bool force_low_reloc = need_low_alloc();
-	if (force_low_reloc) {
-		if (!efi_nokaslr) {
-			efi_info("booting on a broken firmware, KASLR will be disabled\n");
-			efi_nokaslr = true;
-		}
-	}
 
 	/*
 	 * Although relocatable kernels can fix up the misalignment with
@@ -144,6 +137,14 @@ efi_status_t handle_kernel_image(unsigned long *image_addr,
 	 * going to be activated to begin with.
 	 */
 	u64 min_kimg_align = efi_nokaslr ? MIN_KIMG_ALIGN : EFI_KIMG_ALIGN;
+
+	bool force_low_reloc = need_low_alloc();
+	if (force_low_reloc) {
+		if (!efi_nokaslr) {
+			efi_info("booting on a broken firmware, KASLR will be disabled\n");
+			efi_nokaslr = true;
+		}
+	}
 
 	if (IS_ENABLED(CONFIG_RANDOMIZE_BASE)) {
 		if (!efi_nokaslr) {
@@ -187,7 +188,7 @@ efi_status_t handle_kernel_image(unsigned long *image_addr,
 
 	if (force_low_reloc) {
 		status = efi_low_alloc(*reserve_size,
-				       min_kimg_align(),
+				       min_kimg_align,
 				       reserve_addr);
 		if (status != EFI_SUCCESS) {
 			efi_err("Failed to relocate kernel, expect secondary CPUs boot failure\n");
