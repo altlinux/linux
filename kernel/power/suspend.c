@@ -30,6 +30,7 @@
 #include <trace/events/power.h>
 #include <linux/compiler.h>
 #include <linux/moduleparam.h>
+#include <linux/of.h>
 
 #include "power.h"
 
@@ -236,6 +237,17 @@ EXPORT_SYMBOL_GPL(suspend_valid_only_mem);
 
 static bool sleep_state_supported(suspend_state_t state)
 {
+#ifdef CONFIG_OF
+	if (of_device_is_compatible(of_root, "baikal,baikal-m")) {
+		/* XXX: there are no wakeup sources except RTC and Ethernet
+		 * on BE-M1000 based boards. In other words, no way to wakeup
+		 * system via the keyboard or power button.
+		 * Thus even s2idle is unusable on BE-M1000 systems.
+		 */
+		pr_info("%s: no useful wakeup sources on Baikal-M", __func__);
+		return false;
+	}
+#endif
 	return state == PM_SUSPEND_TO_IDLE || (suspend_ops && suspend_ops->enter);
 }
 
