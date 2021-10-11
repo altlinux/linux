@@ -697,52 +697,37 @@
 
 		/* USB MM: USB2 (2c400000, 100000, SPI_267-268_H, SPI_277_H) */
 		usb2: usb2@2c400000 {
-			compatible = "be,baikal-dwc3";
-			status = "disabled";
-			#address-cells = <2>;
-			#size-cells = <2>;
-			ranges;
-			clocks = <&usb_clk>;
-			clock-names = "usb";
+			compatible = "snps,dwc3", "synopsys,dwc3", "generic-xhci";
+			reg = <0x0 0x2c400000 0x0 0x100000>;
+			interrupts = <GIC_SPI 235 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 236 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 245 IRQ_TYPE_LEVEL_HIGH>;
+			dr_mode = "host";
 			dma-coherent;
-
-			dwc3@2c400000 {
-				compatible = "snps,dwc3", "synopsys,dwc3", "generic-xhci";
-				reg = <0x0 0x2c400000 0x0 0x100000>;
-				interrupts = <GIC_SPI 235 IRQ_TYPE_LEVEL_HIGH>,
-					     <GIC_SPI 236 IRQ_TYPE_LEVEL_HIGH>,
-					     <GIC_SPI 245 IRQ_TYPE_LEVEL_HIGH>;
-				dr_mode = "host";
-				dma-coherent;
-				maximum-speed = "high-speed";
-			};
+			maximum-speed = "high-speed";
+			clocks = <&usb_clk 0>;
+			clock-names = "ref";
+			status = "disabled";
 		};
 
 		/* USB MM: USB3 (2c500000, 100000, SPI_269-276_H, SPI_278_H) */
 		usb3: usb3@2c500000 {
-			compatible = "be,baikal-dwc3";
+			compatible = "snps,dwc3", "synopsys,dwc3", "generic-xhci";
+			reg = <0x0 0x2c500000 0x0 0x100000>;
+			interrupts = <GIC_SPI 237 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 238 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 239 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 240 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 241 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 242 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 243 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 244 IRQ_TYPE_LEVEL_HIGH>,
+				     <GIC_SPI 246 IRQ_TYPE_LEVEL_HIGH>;
+			dr_mode = "host";
+			dma-coherent;
+			clocks = <&usb_clk 0>;
+			clock-names = "ref";
 			status = "disabled";
-			#address-cells = <2>;
-			#size-cells = <2>;
-			ranges;
-			clocks = <&usb_clk>;
-			clock-names = "usb";
-
-			dwc3@2c500000 {
-				compatible = "snps,dwc3", "synopsys,dwc3", "generic-xhci";
-				reg = <0x0 0x2c500000 0x0 0x100000>;
-				interrupts = <GIC_SPI 237 IRQ_TYPE_LEVEL_HIGH>,
-					     <GIC_SPI 238 IRQ_TYPE_LEVEL_HIGH>,
-					     <GIC_SPI 239 IRQ_TYPE_LEVEL_HIGH>,
-					     <GIC_SPI 240 IRQ_TYPE_LEVEL_HIGH>,
-					     <GIC_SPI 241 IRQ_TYPE_LEVEL_HIGH>,
-					     <GIC_SPI 242 IRQ_TYPE_LEVEL_HIGH>,
-					     <GIC_SPI 243 IRQ_TYPE_LEVEL_HIGH>,
-					     <GIC_SPI 244 IRQ_TYPE_LEVEL_HIGH>,
-					     <GIC_SPI 246 IRQ_TYPE_LEVEL_HIGH>;
-				dr_mode = "host";
-				dma-coherent;
-			};
 		};
 
 		/* USB MM: SATA0 (2c600000, 10000, SPI_265_H) */
