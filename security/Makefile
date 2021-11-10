@@ -4,6 +4,8 @@
 #
 
 obj-$(CONFIG_KEYS)			+= keys/
+subdir-$(CONFIG_SECURITY_ALTHA)		+= altha
+subdir-$(CONFIG_SECURITY_KIOSK)		+= kiosk
 
 # always enable default capabilities
 obj-y					+= commoncap.o
@@ -24,6 +26,9 @@ obj-$(CONFIG_SECURITY_LOCKDOWN_LSM)	+= lockdown/
 obj-$(CONFIG_CGROUPS)			+= device_cgroup.o
 obj-$(CONFIG_BPF_LSM)			+= bpf/
 obj-$(CONFIG_SECURITY_LANDLOCK)		+= landlock/
+obj-$(CONFIG_SECURITY_ALTHA)		+= altha/
+obj-$(CONFIG_CGROUP_DEVICE)		+= device_cgroup.o
+obj-$(CONFIG_SECURITY_KIOSK)		+= kiosk/
 
 # Object integrity file lists
 obj-$(CONFIG_INTEGRITY)			+= integrity/
