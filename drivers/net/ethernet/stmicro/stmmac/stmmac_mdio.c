@@ -349,11 +349,11 @@ err_disable_clks:
 #define MAC_GPIO 0xe0 /* GPIO register */
 #define MAC_GPIO_GPO0 (1 << 8) /* 0-output port */
 
+#if IS_ENABLED(CONFIG_STMMAC_PLATFORM) && IS_ENABLED(CONFIG_OF)
 /**
  * Reset the MII bus via MAC GP out pin
  */
 static int stmmac_mdio_reset_gp_out(struct stmmac_priv *priv) {
-#if IS_ENABLED(CONFIG_STMMAC_PLATFORM) && IS_ENABLED(CONFIG_OF)
 	u32 value, high, low;
 	u32 delays[3] = { 0, 0, 0 };
 	bool active_low = false;
@@ -399,9 +399,9 @@ static int stmmac_mdio_reset_gp_out(struct stmmac_priv *priv) {
 	mdelay(1000);
 	dev_info(priv->device, "mdio reset completed\n");
 	return 0;
-#endif
 	return -ENODEV;
 }
+#endif
 
 /**
  * stmmac_mdio_reset
