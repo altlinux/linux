@@ -973,12 +973,14 @@ static int pvt_request_regs(struct pvt_hwmon *pvt)
 	return 0;
 }
 
+#ifdef BT1_PVT_DIRECT_REG_ACCESS
 static void pvt_disable_clks(void *data)
 {
 	struct pvt_hwmon *pvt = data;
 
 	clk_bulk_disable_unprepare(PVT_CLOCK_NUM, pvt->clks);
 }
+#endif
 
 static int pvt_request_clks(struct pvt_hwmon *pvt)
 {
