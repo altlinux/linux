@@ -434,6 +434,9 @@ cp -a net/mac80211/ieee80211_i.h \
 cp -a net/mac80211/sta_info.h \
 	%buildroot%kbuild_dir/net/mac80211/
 
+# Remove -Werror from Makefile for external modules
+sed -i '/^KBUILD_.* += -Werror$/,+2d' Makefile
+
 # Install files required for building external modules (in addition to headers)
 KbuildFiles="
 	Makefile
