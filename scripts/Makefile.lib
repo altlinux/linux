@@ -89,6 +89,9 @@ extra-y += $(patsubst %.dtb,%.dt.yaml, $(dtb-y))
 extra-$(CONFIG_OF_ALL_DTBS) += $(patsubst %.dtb,%.dt.yaml, $(dtb-))
 endif
 
+# Overlay targets
+extra-y				+= $(dtbo-y) $(scr-y) $(dtbotxt-y)
+
 # Add subdir path
 
 extra-y		:= $(addprefix $(obj)/,$(extra-y))
