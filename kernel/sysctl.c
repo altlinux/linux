@@ -1661,6 +1661,29 @@ int proc_do_large_bitmap(struct ctl_table *table, int write,
 	return err;
 }
 
+#ifdef CONFIG_USER_NS
+static int sysctl_unprivileged_userns_clone(struct ctl_table *table, int write,
+					    void *buffer, size_t *lenp,
+					    loff_t *ppos)
+{
+	struct ctl_table t;
+	int err;
+	int state = !sysctl_userns_restrict;
+
+	t = *table;
+	t.data = &state;
+
+	err = proc_dointvec_minmax(&t, write, buffer, lenp, ppos);
+	if (err < 0)
+	    return err;
+
+	if (write)
+	    sysctl_userns_restrict = !state;
+
+	return 0;
+}
+#endif
+
 #else /* CONFIG_PROC_SYSCTL */
 
 int proc_dostring(struct ctl_table *table, int write,
@@ -1740,6 +1763,15 @@ int proc_do_large_bitmap(struct ctl_table *table, int write,
 {
 	return -ENOSYS;
 }
+
+#ifdef CONFIG_USER_NS
+static int sysctl_unprivileged_userns_clone(struct ctl_table *table, int write,
+					    void *buffer, size_t *lenp,
+					    loff_t *ppos)
+{
+	return -ENOSYS;
+}
+#endif
 
 #endif /* CONFIG_PROC_SYSCTL */
 
@@ -2321,6 +2353,15 @@ static struct ctl_table kern_table[] = {
                .extra1         = SYSCTL_ZERO,
                .extra2         = SYSCTL_ONE,
        },
+	{
+		.procname	= "unprivileged_userns_clone",
+		.data		= NULL /* filled in by the handler */,
+		.maxlen		= sizeof(int),
+		.mode		= 0644,
+		.proc_handler	= sysctl_unprivileged_userns_clone,
+		.extra1		= SYSCTL_ZERO,
+		.extra2		= SYSCTL_ONE,
+	},
 #endif
 	{
 		.procname	= "ngroups_max",
