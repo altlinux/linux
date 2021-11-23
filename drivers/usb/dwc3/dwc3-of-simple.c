@@ -177,6 +177,8 @@ static const struct of_device_id of_dwc3_simple_match[] = {
 	{ .compatible = "allwinner,sun50i-h6-dwc3" },
 	{ .compatible = "hisilicon,hi3670-dwc3" },
 	{ .compatible = "intel,keembay-dwc3" },
+	{ .compatible = "baikal,baikal-dwc3" },
+	{ .compatible = "be,baikal-dwc3" },
 	{ /* Sentinel */ }
 };
 MODULE_DEVICE_TABLE(of, of_dwc3_simple_match);
