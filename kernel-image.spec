@@ -1,8 +1,8 @@
 Name: kernel-image-@kflavour@
-Release: alt2
+Release: alt1
 epoch:1 
 %define kernel_base_version	5.15
-%define kernel_sublevel .5
+%define kernel_sublevel .6
 %define kernel_extra_version	%nil
 Version: %kernel_base_version%kernel_sublevel%kernel_extra_version
 # Numeric extra version scheme developed by Alexander Bokovoy:
@@ -655,6 +655,9 @@ check-pesign-helper
 %files checkinstall
 
 %changelog
+* Wed Dec 01 2021 Kernel Bot <kernelbot@altlinux.org> 1:5.15.6-alt1
+- v5.15.6
+
 * Fri Nov 26 2021 Kernel Bot <kernelbot@altlinux.org> 1:5.15.5-alt2
 - Add support for debian-specific kernel.unprivileged_userns_clone parameter
 
