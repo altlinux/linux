@@ -131,6 +131,7 @@ static int six_hundred_forty_kb = 640 * 1024;
 #ifdef CONFIG_USER_NS
 extern int sysctl_userns_restrict;
 #endif
+extern int sysctl_idmap_mounts;
 
 
 /* this is needed for the proc_doulongvec_minmax of vm_dirty_bytes */
@@ -2363,6 +2364,15 @@ static struct ctl_table kern_table[] = {
 		.extra2		= SYSCTL_ONE,
 	},
 #endif
+	{
+		.procname       = "idmap_mounts",
+		.data           = &sysctl_idmap_mounts,
+		.maxlen         = sizeof(int),
+		.mode           = 0644,
+		.proc_handler   = proc_dointvec_minmax,
+		.extra1         = SYSCTL_ZERO,
+		.extra2         = SYSCTL_ONE,
+	},
 	{
 		.procname	= "ngroups_max",
 		.data		= &ngroups_max,

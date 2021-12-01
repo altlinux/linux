@@ -658,6 +658,9 @@ check-pesign-helper
 * Wed Dec 01 2021 Kernel Bot <kernelbot@altlinux.org> 1:5.15.6-alt1
 - v5.15.6
 
+* Mon Nov 29 2021 Kernel Bot <kernelbot@altlinux.org> 1:5.15.5-alt3
+- kernel.idmap_mounts sysctl introduced
+
 * Fri Nov 26 2021 Kernel Bot <kernelbot@altlinux.org> 1:5.15.5-alt2
 - Add support for debian-specific kernel.unprivileged_userns_clone parameter
 
