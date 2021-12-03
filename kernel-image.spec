@@ -1,5 +1,5 @@
 Name: kernel-image-@kflavour@
-Release: alt1
+Release: alt2
 epoch:1 
 %define kernel_base_version	5.15
 %define kernel_sublevel .6
@@ -655,6 +655,9 @@ check-pesign-helper
 %files checkinstall
 
 %changelog
+* Fri Dec 03 2021 Alexey Sheplyakov <asheplyakov@altlinux.org> 1:5.15.6-alt2
+- Rebased ALT patches on the top of the linux-5.15.y, no actual code changes
+
 * Wed Dec 01 2021 Kernel Bot <kernelbot@altlinux.org> 1:5.15.6-alt1
 - v5.15.6
 
