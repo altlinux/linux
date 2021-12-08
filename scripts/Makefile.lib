@@ -406,6 +406,12 @@ cmd_dtco = mkdir -p $(dir ${dtc-tmp}) ; \
 $(obj)/%.dtbo: $(src)/%-overlay.dts FORCE
 	$(call if_changed_dep,dtco)
 
+quiet_cmd_scr = MKIMAGE $@
+cmd_scr = mkimage -C none -A $(ARCH) -T script -d $< $@
+
+$(obj)/%.scr: $(src)/%.scr-cmd FORCE
+	$(call if_changed,scr)
+
 dtc-tmp = $(subst $(comma),_,$(dot-target).dts.tmp)
 
 # Bzip2
