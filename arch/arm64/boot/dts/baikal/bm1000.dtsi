@@ -850,7 +850,7 @@
 				#size-cells = <0>;
 
 				gmac0_phy: ethernet-phy@3 {
-					compatible = "micrel,ksz9031", "ethernet-phy-id0022.1620", "ethernet-phy-ieee802.3-c22";
+					compatible = "ethernet-phy-id0022.1620", "ethernet-phy-ieee802.3-c22";
 					reg = <0x3>;
 					txd0-skew-ps = <0>;
 					txd1-skew-ps = <0>;
@@ -889,7 +889,7 @@
 				#size-cells = <0>;
 
 				gmac1_phy: ethernet-phy@3 {
-					compatible = "micrel,ksz9031", "ethernet-phy-id0022.1620", "ethernet-phy-ieee802.3-c22";
+					compatible = "ethernet-phy-id0022.1620", "ethernet-phy-ieee802.3-c22";
 					reg = <0x3>;
 					txd0-skew-ps = <0>;
 					txd1-skew-ps = <0>;
