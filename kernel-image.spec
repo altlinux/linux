@@ -444,6 +444,12 @@ grep -qE '^(\[ *[0-9]+\.[0-9]+\] *)?reboot: Power down' boot.log || {
 %endif
 
 %changelog
+* Tue Dec 21 2021 Dmitry Terekhin <jqt4@altlinux.org> 1:5.15.10-alt1
+- Updated to 5.15.10
+- https://github.com/raspberrypi/linux.git rpi-5.15.y
+- commit b9a0a5312f009a4c42015652cac829be482c13a4
+- Change the build scheme
+
 * Fri Dec 17 2021 Dmitry Terekhin <jqt4@altlinux.org> 1:5.15.6-alt1
 - Updated to 5.15.6
 - https://github.com/raspberrypi/linux.git rpi-5.15.y
