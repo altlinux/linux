@@ -6,7 +6,7 @@ epoch:1
 %define kernel_need_version	5.15
 # Used when kernel-source-x.y does not currently exist in repository.
 %define kernel_base_version	5.15
-%define kernel_sublevel .6
+%define kernel_sublevel .10
 %define kernel_extra_version	%nil
 # kernel version is need version
 Version: %kernel_need_version%kernel_sublevel%kernel_extra_version
@@ -53,7 +53,8 @@ License: GPL
 Group: System/Kernel and hardware
 Url: http://www.kernel.org/
 Packager: Kernel Maintainers Team <kernel@packages.altlinux.org>
-
+Source0: %name-%version.tar
+Source1: config-%_target_cpu
 Patch0: %name-%version-%release.patch
 
 ExclusiveArch: aarch64
@@ -75,7 +76,6 @@ BuildRequires: flex
 BuildRequires: libdb4-devel
 BuildRequires: gcc%kgcc_version gcc%kgcc_version-c++
 BuildRequires: gcc%kgcc_version-plugin-devel libgmp-devel libmpc-devel
-BuildRequires: kernel-source-%kernel_base_version = %kernel_extra_version_numeric
 BuildRequires: module-init-tools >= 3.16
 BuildRequires: lzma-utils
 BuildRequires: libelf-devel
@@ -192,12 +192,9 @@ patches applied to the corresponding kernel packages may change things
 in the kernel and update the documentation to reflect these changes.
 
 %prep
-%setup -cT -n kernel-image-%flavour-%kversion-%krelease
-rm -rf kernel-source-%kernel_base_version
-tar -xf %kernel_src/kernel-source-%kernel_base_version.tar
-%setup -D -T -n kernel-image-%flavour-%kversion-%krelease/kernel-source-%kernel_base_version
+%setup
 %patch0 -p1
-
+cp %SOURCE1 .
 
 # this file should be usable both with make and sh (for broken modules
 # which do not use the kernel makefile system)

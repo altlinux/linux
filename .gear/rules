@@ -1,1 +1,3 @@
-diff: v5.15:. .
+tar: rpi-upstream:.
+diff: rpi-upstream:. rpi-un-source:.
+copy: config*
