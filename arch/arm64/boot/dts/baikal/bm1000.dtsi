@@ -692,6 +692,7 @@
 			interrupt-names = "job", "mmu", "gpu";
 			clocks = <&cmu_mali>;
 			clock-names = "gpuclk";
+			dma-coherent;
 			operating-points-v2 = <&gpu_opp_table>;
 		};
 
