@@ -552,6 +552,10 @@ static int panfrost_probe(struct platform_device *pdev)
 		return -ENODEV;
 
 	pfdev->coherent = device_get_dma_attr(&pdev->dev) == DEV_DMA_COHERENT;
+	if (!pfdev->coherent && of_device_is_compatible(of_root, "baikal,baikal-m")) {
+		pfdev->coherent = true;
+		dev_warn(&pdev->dev, "marking as DMA coherent on BE-M1000");
+	}
 
 	/* Allocate and initialze the DRM device. */
 	ddev = drm_dev_alloc(&panfrost_drm_driver, &pdev->dev);
