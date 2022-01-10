@@ -6,7 +6,7 @@ epoch:1
 %define kernel_need_version	5.15
 # Used when kernel-source-x.y does not currently exist in repository.
 %define kernel_base_version	5.15
-%define kernel_sublevel .10
+%define kernel_sublevel .13
 %define kernel_extra_version	%nil
 # kernel version is need version
 Version: %kernel_need_version%kernel_sublevel%kernel_extra_version
@@ -444,11 +444,11 @@ grep -qE '^(\[ *[0-9]+\.[0-9]+\] *)?reboot: Power down' boot.log || {
 %endif
 
 %changelog
-* Tue Dec 21 2021 Dmitry Terekhin <jqt4@altlinux.org> 1:5.15.10-alt1
-- Updated to 5.15.10
+* Mon Jan 10 2022 Dmitry Terekhin <jqt4@altlinux.org> 1:5.15.13-alt1
+- Updated to 5.15.13
 - https://github.com/raspberrypi/linux.git rpi-5.15.y
-- commit b9a0a5312f009a4c42015652cac829be482c13a4
-- Change the build scheme
+- commit 38b39910c34d774e01f0b4d5a61ac581c7cf14c1
+- Change the build scheme: don't use the kernel-source package
 
 * Fri Dec 17 2021 Dmitry Terekhin <jqt4@altlinux.org> 1:5.15.6-alt1
 - Updated to 5.15.6
