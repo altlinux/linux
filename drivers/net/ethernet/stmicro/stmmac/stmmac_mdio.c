@@ -346,6 +346,63 @@ err_disable_clks:
 	return ret;
 }
 
+#define MAC_GPIO 0xe0 /* GPIO register */
+#define MAC_GPIO_GPO BIT(8)  /* output port */
+
+#if IS_ENABLED(CONFIG_STMMAC_PLATFORM) && IS_ENABLED(CONFIG_OF)
+/**
+ * Reset the MII bus via MAC GP_OUT pin
+ */
+static int stmmac_mdio_reset_gp_out(struct stmmac_priv *priv) {
+	u32 value, high, low;
+	u32 delays[3] = { 0, 0, 0 };
+	bool active_low = false;
+	struct device_node *np = priv->device->of_node;
+
+	if (!np)
+		return -ENODEV;
+
+	if (!of_property_read_bool(np, "snps,reset-gp-out")) {
+		dev_warn(priv->device, "snps,reset-gp-out is not set\n");
+		return -ENODEV;
+	}
+
+	dev_info(priv->device, "resetting MDIO via GP_OUT\n");
+	active_low = of_property_read_bool(np, "snsps,reset-active-low");
+	of_property_read_u32_array(np, "snps,reset-delays-us", delays, 3);
+
+	value = readl(priv->ioaddr + MAC_GPIO);
+	if (active_low) {
+		high = value | MAC_GPIO_GPO;
+		low = value & ~MAC_GPIO_GPO;
+	} else {
+		high = value & ~MAC_GPIO_GPO;
+		low = value | MAC_GPIO_GPO;
+	}
+
+	writel(high, priv->ioaddr + MAC_GPIO);
+	if (delays[0])
+		msleep(DIV_ROUND_UP(delays[0], 1000));
+
+	writel(low, priv->ioaddr + MAC_GPIO);
+	if (delays[1])
+		msleep(DIV_ROUND_UP(delays[1], 1000));
+
+	writel(high, priv->ioaddr + MAC_GPIO);
+	if (delays[2])
+		msleep(DIV_ROUND_UP(delays[2], 1000));
+
+	/* Clear PHY reset */
+	udelay(10);
+	value = readl(priv->ioaddr + MAC_GPIO);
+	value |= MAC_GPIO_GPO;
+	writel(value, priv->ioaddr + MAC_GPIO);
+	msleep(1000);
+	dev_info(priv->device, "mdio reset completed\n");
+	return 0;
+}
+#endif
+
 /**
  * stmmac_mdio_reset
  * @bus: points to the mii_bus structure
@@ -361,7 +418,13 @@ int stmmac_mdio_reset(struct mii_bus *bus)
 #ifdef CONFIG_OF
 	if (priv->device->of_node) {
 		struct gpio_desc *reset_gpio;
+		bool reset_gp_out;
 		u32 delays[3] = { 0, 0, 0 };
+
+		reset_gp_out = of_property_read_bool(priv->device->of_node,
+						     "snps,reset-gp-out");
+		if (reset_gp_out)
+			return stmmac_mdio_reset_gp_out(priv);
 
 		reset_gpio = devm_gpiod_get_optional(priv->device,
 						     "snps,reset",
