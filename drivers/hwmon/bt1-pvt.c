@@ -138,12 +138,23 @@ static long pvt_calc_poly(const struct pvt_poly *poly, long data)
 	return ret / poly->total_divider;
 }
 
-static inline u32 pvt_update(void __iomem *reg, u32 mask, u32 data)
+static inline u32 pvt_readl(struct pvt_hwmon const *pvt, int reg) {
+	return readl(pvt->regs + reg);
+}
+
+static inline u32 pvt_readl_relaxed(struct pvt_hwmon const *pvt, int reg) {
+	return readl_relaxed(pvt->regs + reg);
+}
+
+static inline void pvt_writel(u32 data, struct pvt_hwmon const *pvt, int reg) {
+	writel(data, pvt->regs + reg);
+}
+static inline u32 pvt_update(struct pvt_hwmon *pvt, int reg, u32 mask, u32 data)
 {
 	u32 old;
 
-	old = readl_relaxed(reg);
-	writel((old & ~mask) | (data & mask), reg);
+	old = pvt_readl_relaxed(pvt, reg);
+	pvt_writel((old & ~mask) | (data & mask), pvt, reg);
 
 	return old & mask;
 }
@@ -161,8 +172,8 @@ static inline void pvt_set_mode(struct pvt_hwmon *pvt, u32 mode)
 
 	mode = FIELD_PREP(PVT_CTRL_MODE_MASK, mode);
 
-	old = pvt_update(pvt->regs + PVT_CTRL, PVT_CTRL_EN, 0);
-	pvt_update(pvt->regs + PVT_CTRL, PVT_CTRL_MODE_MASK | PVT_CTRL_EN,
+	old = pvt_update(pvt, PVT_CTRL, PVT_CTRL_EN, 0);
+	pvt_update(pvt, PVT_CTRL, PVT_CTRL_MODE_MASK | PVT_CTRL_EN,
 		   mode | old);
 }
 
@@ -179,8 +190,8 @@ static inline void pvt_set_trim(struct pvt_hwmon *pvt, u32 trim)
 
 	trim = FIELD_PREP(PVT_CTRL_TRIM_MASK, trim);
 
-	old = pvt_update(pvt->regs + PVT_CTRL, PVT_CTRL_EN, 0);
-	pvt_update(pvt->regs + PVT_CTRL, PVT_CTRL_TRIM_MASK | PVT_CTRL_EN,
+	old = pvt_update(pvt, PVT_CTRL, PVT_CTRL_EN, 0);
+	pvt_update(pvt, PVT_CTRL, PVT_CTRL_TRIM_MASK | PVT_CTRL_EN,
 		   trim | old);
 }
 
@@ -188,9 +199,9 @@ static inline void pvt_set_tout(struct pvt_hwmon *pvt, u32 tout)
 {
 	u32 old;
 
-	old = pvt_update(pvt->regs + PVT_CTRL, PVT_CTRL_EN, 0);
-	writel(tout, pvt->regs + PVT_TTIMEOUT);
-	pvt_update(pvt->regs + PVT_CTRL, PVT_CTRL_EN, old);
+	old = pvt_update(pvt, PVT_CTRL, PVT_CTRL_EN, 0);
+	pvt_writel(tout, pvt, PVT_TTIMEOUT);
+	pvt_update(pvt, PVT_CTRL, PVT_CTRL_EN, old);
 }
 
 /*
@@ -237,7 +248,7 @@ static irqreturn_t pvt_soft_isr(int irq, void *data)
 	 * status before the next conversion happens. Threshold events will be
 	 * handled a bit later.
 	 */
-	thres_sts = readl(pvt->regs + PVT_RAW_INTR_STAT);
+	thres_sts = pvt_readl(pvt, PVT_RAW_INTR_STAT);
 
 	/*
 	 * Then lets recharge the PVT interface with the next sampling mode.
@@ -260,14 +271,14 @@ static irqreturn_t pvt_soft_isr(int irq, void *data)
 	 */
 	mutex_lock(&pvt->iface_mtx);
 
-	old = pvt_update(pvt->regs + PVT_INTR_MASK, PVT_INTR_DVALID,
+	old = pvt_update(pvt, PVT_INTR_MASK, PVT_INTR_DVALID,
 			 PVT_INTR_DVALID);
 
-	val = readl(pvt->regs + PVT_DATA);
+	val = pvt_readl(pvt, PVT_DATA);
 
 	pvt_set_mode(pvt, pvt_info[pvt->sensor].mode);
 
-	pvt_update(pvt->regs + PVT_INTR_MASK, PVT_INTR_DVALID, old);
+	pvt_update(pvt, PVT_INTR_MASK, PVT_INTR_DVALID, old);
 
 	mutex_unlock(&pvt->iface_mtx);
 
@@ -337,7 +348,7 @@ static int pvt_read_limit(struct pvt_hwmon *pvt, enum pvt_sensor_type type,
 	u32 data;
 
 	/* No need in serialization, since it is just read from MMIO. */
-	data = readl(pvt->regs + pvt_info[type].thres_base);
+	data = pvt_readl(pvt, pvt_info[type].thres_base);
 
 	if (is_low)
 		data = FIELD_GET(PVT_THRES_LO_MASK, data);
@@ -372,7 +383,7 @@ static int pvt_write_limit(struct pvt_hwmon *pvt, enum pvt_sensor_type type,
 		return ret;
 
 	/* Make sure the upper and lower ranges don't intersect. */
-	limit = readl(pvt->regs + pvt_info[type].thres_base);
+	limit = pvt_readl(pvt, pvt_info[type].thres_base);
 	if (is_low) {
 		limit = FIELD_GET(PVT_THRES_HI_MASK, limit);
 		data = clamp_val(data, PVT_DATA_MIN, limit);
@@ -385,7 +396,7 @@ static int pvt_write_limit(struct pvt_hwmon *pvt, enum pvt_sensor_type type,
 		mask = PVT_THRES_HI_MASK;
 	}
 
-	pvt_update(pvt->regs + pvt_info[type].thres_base, mask, data);
+	pvt_update(pvt, pvt_info[type].thres_base, mask, data);
 
 	mutex_unlock(&pvt->iface_mtx);
 
@@ -439,14 +450,14 @@ static irqreturn_t pvt_hard_isr(int irq, void *data)
 	 * Mask the DVALID interrupt so after exiting from the handler a
 	 * repeated conversion wouldn't happen.
 	 */
-	pvt_update(pvt->regs + PVT_INTR_MASK, PVT_INTR_DVALID,
+	pvt_update(pvt, PVT_INTR_MASK, PVT_INTR_DVALID,
 		   PVT_INTR_DVALID);
 
 	/*
 	 * Nothing special for alarm-less driver. Just read the data, update
 	 * the cache and notify a waiter of this event.
 	 */
-	val = readl(pvt->regs + PVT_DATA);
+	val = pvt_readl(pvt, PVT_DATA);
 	if (!(val & PVT_DATA_VALID)) {
 		dev_err(pvt->dev, "Got IRQ when data isn't valid\n");
 		return IRQ_HANDLED;
@@ -498,8 +509,8 @@ static int pvt_read_data(struct pvt_hwmon *pvt, enum pvt_sensor_type type,
 	 * Unmask the DVALID interrupt and enable the sensors conversions.
 	 * Do the reverse procedure when conversion is done.
 	 */
-	pvt_update(pvt->regs + PVT_INTR_MASK, PVT_INTR_DVALID, 0);
-	pvt_update(pvt->regs + PVT_CTRL, PVT_CTRL_EN, PVT_CTRL_EN);
+	pvt_update(pvt, PVT_INTR_MASK, PVT_INTR_DVALID, 0);
+	pvt_update(pvt, PVT_CTRL, PVT_CTRL_EN, PVT_CTRL_EN);
 
 	/*
 	 * Wait with timeout since in case if the sensor is suddenly powered
@@ -510,8 +521,8 @@ static int pvt_read_data(struct pvt_hwmon *pvt, enum pvt_sensor_type type,
 	timeout = 2 * usecs_to_jiffies(ktime_to_us(pvt->timeout));
 	ret = wait_for_completion_timeout(&cache->conversion, timeout);
 
-	pvt_update(pvt->regs + PVT_CTRL, PVT_CTRL_EN, 0);
-	pvt_update(pvt->regs + PVT_INTR_MASK, PVT_INTR_DVALID,
+	pvt_update(pvt, PVT_CTRL, PVT_CTRL_EN, 0);
+	pvt_update(pvt, PVT_INTR_MASK, PVT_INTR_DVALID,
 		   PVT_INTR_DVALID);
 
 	data = READ_ONCE(cache->data);
@@ -637,7 +648,7 @@ static int pvt_read_trim(struct pvt_hwmon *pvt, long *val)
 {
 	u32 data;
 
-	data = readl(pvt->regs + PVT_CTRL);
+	data = pvt_readl(pvt, PVT_CTRL);
 	*val = FIELD_GET(PVT_CTRL_TRIM_MASK, data) * PVT_TRIM_STEP;
 
 	return 0;
@@ -981,21 +992,21 @@ static int pvt_check_pwr(struct pvt_hwmon *pvt)
 	 * conversion. In the later case alas we won't be able to detect the
 	 * problem.
 	 */
-	pvt_update(pvt->regs + PVT_INTR_MASK, PVT_INTR_ALL, PVT_INTR_ALL);
-	pvt_update(pvt->regs + PVT_CTRL, PVT_CTRL_EN, PVT_CTRL_EN);
+	pvt_update(pvt, PVT_INTR_MASK, PVT_INTR_ALL, PVT_INTR_ALL);
+	pvt_update(pvt, PVT_CTRL, PVT_CTRL_EN, PVT_CTRL_EN);
 	pvt_set_tout(pvt, 0);
-	readl(pvt->regs + PVT_DATA);
+	pvt_readl(pvt, PVT_DATA);
 
 	tout = PVT_TOUT_MIN / NSEC_PER_USEC;
 	usleep_range(tout, 2 * tout);
 
-	data = readl(pvt->regs + PVT_DATA);
+	data = pvt_readl(pvt, PVT_DATA);
 	if (!(data & PVT_DATA_VALID)) {
 		ret = -ENODEV;
 		dev_err(pvt->dev, "Sensor is powered down\n");
 	}
 
-	pvt_update(pvt->regs + PVT_CTRL, PVT_CTRL_EN, 0);
+	pvt_update(pvt, PVT_CTRL, PVT_CTRL_EN, 0);
 
 	return ret;
 }
@@ -1016,10 +1027,10 @@ static int pvt_init_iface(struct pvt_hwmon *pvt)
 	 * accidentally have ISR executed before the driver data is fully
 	 * initialized. Clear the IRQ status as well.
 	 */
-	pvt_update(pvt->regs + PVT_INTR_MASK, PVT_INTR_ALL, PVT_INTR_ALL);
-	pvt_update(pvt->regs + PVT_CTRL, PVT_CTRL_EN, 0);
-	readl(pvt->regs + PVT_CLR_INTR);
-	readl(pvt->regs + PVT_DATA);
+	pvt_update(pvt, PVT_INTR_MASK, PVT_INTR_ALL, PVT_INTR_ALL);
+	pvt_update(pvt, PVT_CTRL, PVT_CTRL_EN, 0);
+	pvt_readl(pvt, PVT_CLR_INTR);
+	pvt_readl(pvt, PVT_DATA);
 
 	/* Setup default sensor mode, timeout and temperature trim. */
 	pvt_set_mode(pvt, pvt_info[pvt->sensor].mode);
@@ -1103,8 +1114,8 @@ static void pvt_disable_iface(void *data)
 	struct pvt_hwmon *pvt = data;
 
 	mutex_lock(&pvt->iface_mtx);
-	pvt_update(pvt->regs + PVT_CTRL, PVT_CTRL_EN, 0);
-	pvt_update(pvt->regs + PVT_INTR_MASK, PVT_INTR_DVALID,
+	pvt_update(pvt, PVT_CTRL, PVT_CTRL_EN, 0);
+	pvt_update(pvt, PVT_INTR_MASK, PVT_INTR_DVALID,
 		   PVT_INTR_DVALID);
 	mutex_unlock(&pvt->iface_mtx);
 }
@@ -1126,8 +1137,8 @@ static int pvt_enable_iface(struct pvt_hwmon *pvt)
 	 * which theoretically may cause races.
 	 */
 	mutex_lock(&pvt->iface_mtx);
-	pvt_update(pvt->regs + PVT_INTR_MASK, PVT_INTR_DVALID, 0);
-	pvt_update(pvt->regs + PVT_CTRL, PVT_CTRL_EN, PVT_CTRL_EN);
+	pvt_update(pvt, PVT_INTR_MASK, PVT_INTR_DVALID, 0);
+	pvt_update(pvt, PVT_CTRL, PVT_CTRL_EN, PVT_CTRL_EN);
 	mutex_unlock(&pvt->iface_mtx);
 
 	return 0;
