@@ -32,7 +32,7 @@
 		ethernet3		= &xgmac0;
 		ethernet4		= &xgmac1;
 		gic			= &gic;
-		gpio			= &gpio;
+		gpio0			= &gpio;
 		hda			= &hda;
 		i2c0			= &i2c0;
 		i2c1			= &i2c1;
