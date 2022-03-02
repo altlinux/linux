@@ -1,0 +1,39 @@
+
+Upstream repo: git://github.com/raspberrypi/linux.git, branch rpi-5.15.y
+
+ALT Linux repo: git://git.altlinux.org/people/asheplyakov/packages/linux.git
+- code branch (Baikal-M support, etc): rpi-baikalm-5.15.y
+- spec branch: spec-rpi-un-def
+
+
+Checking out the code
+---------------------
+
+git clone -b rpi-baikalm-5.15.y git://git.altlinux.org/people/asheplyakov/packages/linux.git linux-rpi-baikalm-5.15.y
+cd linux-rpi-baikalm-5.15.y
+git remote add raspberrypi git://github.com/raspberrypi/linux.git
+git remote set-branches raspberrypi rpi-5.15.y
+git worktree add --track -b spec-rpi-un-def ../kernel-image-rpi-un-def origin/spec-rpi-un-def
+Development
+-----------
+
+cd linux-rpi-baikalm-5.15.y
+# hack, hack, hack
+make -j`nproc` ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- baikal_rpi_rockpi4_defconfig
+make -j`nproc` ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- all dtbs
+# install, boot-test
+
+Building packages
+-----------------
+
+cd kernel-image-rpi-un-def
+gear-hsh -- -v 
+
+Updating package
+----------------
+
+cd kernel-image-rpi-un-def
+git merge -s ours rpi-baikalm-5.15.y
+# update tags in .gear/tags/list
+# rpi-upstream: git rev-parse raspberrypi/rpi-5.15.y
+# rpi-un-source: git rev-parse rpi-baikalm-5.15.y
