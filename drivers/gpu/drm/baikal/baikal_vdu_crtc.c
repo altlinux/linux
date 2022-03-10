@@ -134,14 +134,15 @@ static void baikal_vdu_crtc_helper_mode_set_nofb(struct drm_crtc *crtc)
 	drm_mode_debug_printmodeline(mode);
 
 	ppl = mode->hdisplay / 16;
-	if (priv->panel) {
+	if (priv->type == VDU_TYPE_LVDS) {
 		hsw = mode->hsync_end - mode->hsync_start;
 		hfp = mode->hsync_start - mode->hdisplay - 1;
+		hbp = mode->htotal - mode->hsync_end;
 	} else {
 		hsw = mode->hsync_end - mode->hsync_start - 1;
 		hfp = mode->hsync_start - mode->hdisplay;
+		hbp = mode->htotal - mode->hsync_end - 1;
 	}
-	hbp = mode->htotal - mode->hsync_end;
 
 	lpp = mode->vdisplay;
 	vsw = mode->vsync_end - mode->vsync_start;
@@ -194,13 +195,13 @@ static void baikal_vdu_crtc_helper_enable(struct drm_crtc *crtc,
 {
 	struct baikal_vdu_private *priv = crtc->dev->dev_private;
 	struct drm_panel *panel = priv->panel;
-	struct device_node *panel_node;
-	const char *data_mapping;
+	const char *data_mapping = NULL;
 	u32 cntl, gpio;
 
+	DRM_DEV_DEBUG_DRIVER(crtc->dev->dev, "priv = %px\n", priv);
 	DRM_DEV_DEBUG_DRIVER(crtc->dev->dev, "enabling pixel clock\n");
 	clk_prepare_enable(priv->clk);
-
+	DRM_DEV_DEBUG_DRIVER(crtc->dev->dev, "panel = %px\n", panel);
 	drm_panel_prepare(panel);
 
 	writel(ISCR_VSC_VFP, priv->regs + ISCR);
@@ -217,17 +218,24 @@ static void baikal_vdu_crtc_helper_enable(struct drm_crtc *crtc,
 	cntl |= CR1_LCE + CR1_FDW_16_WORDS;
 
 	if (priv->type == VDU_TYPE_LVDS) {
-		panel_node = panel->dev->of_node;
-		if (of_property_read_string(panel_node, "data-mapping", &data_mapping)) {
+		if (panel) {
+			of_property_read_string(panel->dev->of_node,
+						"data-mapping", &data_mapping);
+		}
+		if (!data_mapping) {
 			cntl |= CR1_OPS_LCD18;
-		} else if (strncmp(data_mapping, "vesa-24", 7))
+			dev_dbg(crtc->dev->dev, "data mapping not specified, using jeida-18");
+		} else if (!strncmp(data_mapping, "vesa-24", 7)) {
 			cntl |= CR1_OPS_LCD24;
-		else if (strncmp(data_mapping, "jeida-18", 8))
-			cntl |= CR1_OPS_LCD18;
-		else {
-			dev_warn(crtc->dev->dev, "%s data mapping is not supported, vesa-24 is set\n", data_mapping);
+			dev_dbg(crtc->dev->dev, "using vesa-24 mapping\n");
+		} else if (!strncmp(data_mapping, "jeida-18", 8)) {
+				cntl |= CR1_OPS_LCD18;
+				dev_dbg(crtc->dev->dev, "using jeida-18 mapping\n");
+		} else {
+			dev_warn(crtc->dev->dev, "unsupported data mapping '%s', using vesa-24\n", data_mapping);
 			cntl |= CR1_OPS_LCD24;
 		}
+
 		gpio = GPIOR_UHD_ENB;
 		if (priv->ep_count == 4)
 			gpio |= GPIOR_UHD_QUAD_PORT;

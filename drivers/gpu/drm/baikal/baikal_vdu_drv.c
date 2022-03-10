@@ -95,9 +95,9 @@ static int vdu_modeset_init(struct drm_device *dev)
 	mode_config = &dev->mode_config;
 	mode_config->funcs = &mode_config_funcs;
 	mode_config->min_width = 1;
-	mode_config->max_width = 4096;
+	mode_config->max_width = 4095;
 	mode_config->min_height = 1;
-	mode_config->max_height = 4096;
+	mode_config->max_height = 4095;
 
 	ret = baikal_vdu_primary_plane_init(dev);
 	if (ret != 0) {
@@ -124,6 +124,7 @@ static int vdu_modeset_init(struct drm_device *dev)
 		goto out_config;
 	}
 	priv->ep_count = ep_count;
+	dev_dbg(dev->dev, "panel/bridge has %d endpoints\n", priv->ep_count);
 
 	if (priv->bridge) {
 		struct drm_encoder *encoder = &priv->encoder;
