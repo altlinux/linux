@@ -1196,21 +1196,25 @@ int azx_probe_codecs(struct azx *chip, unsigned int max_slots)
 {
 	struct hdac_bus *bus = azx_bus(chip);
 	int c, codecs, err;
+	int retry_count, max_probe_retries = 1;
 
 	codecs = 0;
 	if (!max_slots)
 		max_slots = AZX_DEFAULT_CODECS;
 
+	if (of_device_is_compatible(chip->card->dev->of_node, "be,cw-hda"))
+		max_probe_retries = 100;
+
 	/* First try to probe all given codec slots */
 	for (c = 0; c < max_slots; c++) {
 		if ((bus->codec_mask & (1 << c)) & chip->codec_probe_mask) {
+			retry_count = 0;
+probe_retry:
 			if (probe_codec(chip, c) < 0) {
+				retry_count++;
 				/* Some BIOSen give you wrong codec addresses
 				 * that don't exist
 				 */
-				dev_warn(chip->card->dev,
-					 "Codec #%d probe error; disabling it...\n", c);
-				bus->codec_mask &= ~(1 << c);
 				/* More badly, accessing to a non-existing
 				 * codec often screws up the controller chip,
 				 * and disturbs the further communications.
@@ -1220,6 +1224,15 @@ int azx_probe_codecs(struct azx *chip, unsigned int max_slots)
 				 */
 				azx_stop_chip(chip);
 				azx_init_chip(chip, true);
+				if (retry_count < max_probe_retries)
+					goto probe_retry;
+				dev_warn(chip->card->dev,
+					 "Codec #%d probe error; disabling it...\n", c);
+				bus->codec_mask &= ~(1 << c);
+			} else {
+				dev_info(chip->card->dev,
+					 "Codec #%d successfully probed, retry count = %d\n",
+					 c, retry_count);
 			}
 		}
 	}
