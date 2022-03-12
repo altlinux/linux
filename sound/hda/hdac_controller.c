@@ -6,6 +6,7 @@
 #include <linux/kernel.h>
 #include <linux/delay.h>
 #include <linux/export.h>
+#include <linux/of.h>
 #include <sound/core.h>
 #include <sound/hdaudio.h>
 #include <sound/hda_register.h>
@@ -31,7 +32,8 @@ static void azx_clear_corbrp(struct hdac_bus *bus)
 			break;
 		udelay(1);
 	}
-	if (timeout <= 0)
+	if (timeout <= 0
+			&& !of_device_is_compatible(bus->dev->of_node, "be,cw-hda"))
 		dev_err(bus->dev, "CORB reset timeout#2, CORBRP = %d\n",
 			snd_hdac_chip_readw(bus, CORBRP));
 }
@@ -42,6 +44,7 @@ static void azx_clear_corbrp(struct hdac_bus *bus)
  */
 void snd_hdac_bus_init_cmd_io(struct hdac_bus *bus)
 {
+	u8 rirbctl;
 	WARN_ON_ONCE(!bus->rb.area);
 
 	spin_lock_irq(&bus->reg_lock);
@@ -78,8 +81,13 @@ void snd_hdac_bus_init_cmd_io(struct hdac_bus *bus)
 	snd_hdac_chip_writew(bus, RIRBWP, AZX_RIRBWP_RST);
 	/* set N=1, get RIRB response interrupt for new entry */
 	snd_hdac_chip_writew(bus, RINTCNT, 1);
-	/* enable rirb dma and response irq */
-	snd_hdac_chip_writeb(bus, RIRBCTL, AZX_RBCTL_DMA_EN | AZX_RBCTL_IRQ_EN);
+	rirbctl = AZX_RBCTL_DMA_EN | AZX_RBCTL_IRQ_EN;
+	if (of_device_is_compatible(bus->dev->of_node, "be,cw-hda")) {
+		/* response IRQ does not work in Baikal-M HDA controller */
+		rirbctl = AZX_RBCTL_DMA_EN;
+	}
+	/* enable rirb dma and response irq (if supported) */
+	snd_hdac_chip_writeb(bus, RIRBCTL, rirbctl);
 	/* Accept unsolicited responses */
 	snd_hdac_chip_updatel(bus, GCTL, AZX_GCTL_UNSOL, AZX_GCTL_UNSOL);
 	spin_unlock_irq(&bus->reg_lock);
@@ -143,6 +151,11 @@ int snd_hdac_bus_send_cmd(struct hdac_bus *bus, unsigned int val)
 {
 	unsigned int addr = azx_command_addr(val);
 	unsigned int wp, rp;
+
+	if (of_device_is_compatible(bus->dev->of_node, "be,cw-hda")) {
+		/* force first codec address because wrong codec init */
+		val |= 0x10000000U;
+	}
 
 	spin_lock_irq(&bus->reg_lock);
 
